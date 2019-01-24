@@ -1,6 +1,7 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var { User } = require('../model/User');
+var {ObjectID} = require('mongodb');
 
 var jwt = require('jsonwebtoken');
 var bcrypt = require('bcryptjs');
@@ -69,6 +70,28 @@ router.post('/login',(req,res)=>{
             res.header('x-auth', token).send(user);
         })
     }).catch((e)=>{
+        res.status(400).send(e);
+    })
+})
+
+router.get('/logout',(req,res)=>{
+    res.status(200).send({token:null});
+})
+
+router.patch('/update/:id',(req,res)=>{
+    var id = req.params.id;
+    var body = req.body;
+
+    if(!ObjectID.isValid(id)){
+        res.status(404).send();
+    }
+
+    User.findByIdAndUpdate(id,{$set:body},{new:true}).then((user)=>{
+        if(user)
+            res.send({user})
+        else
+            res.status(404).send();
+    }).catch(e=>{
         res.status(400).send(e);
     })
 })
