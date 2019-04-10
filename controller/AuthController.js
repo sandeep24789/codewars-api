@@ -18,38 +18,22 @@ router.post('/register', (req, res) => {
         email: req.body.email,
         password: hashedPwd,
         name: req.body.name,
-        status: req.body.status,
-        role: req.body.role,
-        groups: req.body.groups,
+        group: req.body.group,
         rounds: {
-            round1: {
-                status: 'YET_TO_START',
+            quizohilic: {
+                status: 'ACTIVATE',
                 mark: 0,
                 result: 'NA'
             },
-            round2: {
-                status: 'YET_TO_START',
+            codingame: {
+                status: 'DEACTIVATTE',
                 mark: 0,
                 result: 'NA'
             },
-            round3: {
-                status: 'YET_TO_START',
+            cfc: {
+                status: 'DEACTIVATE',
                 mark: 0,
                 result: 'NA'
-            }
-        },
-        tickets: {
-            ticket1: {
-                yellow: 'YET_TO_START',
-                bronze: 'YET_TO_START'
-            },
-            ticket2: {
-                blue: 'YET_TO_START',
-                silver: 'YET_TO_START'
-            },
-            ticket3: {
-                green: 'YET_TO_START',
-                gold: 'YET_TO_START'
             }
         }
     });
@@ -66,8 +50,19 @@ router.post('/register', (req, res) => {
 router.post('/login',(req,res)=>{
     var body = _.pick(req.body,['email','password']);
     User.findByCredentials(body.email,body.password).then((user)=>{
+        console.log(user);
         return user.generateAuthToken().then((token)=>{
-            res.header('x-auth', token).send(user);
+            var loginDetails = {
+                email: user.email,
+                name: user.name,
+                id: user._id,
+                quizohilic: user.rounds.quizohilic.status,
+                codingame: user.rounds.codingame.status,
+                cfc: user.rounds.cfc.status,
+                group: user.group,
+                token: token
+            }
+            res.header('x-auth', token).send(loginDetails);
         })
     }).catch((e)=>{
         res.status(400).send(e);
@@ -80,13 +75,19 @@ router.get('/logout',(req,res)=>{
 
 router.patch('/update/:id',(req,res)=>{
     var id = req.params.id;
-    var body = req.body;
+    var round = req.body.round;
+    var status = req.body.status;
+
+    var query = {};
+    query['rounds.'+round+'.status'] = status;
+
+    console.log(query);
 
     if(!ObjectID.isValid(id)){
         res.status(404).send();
     }
 
-    User.findByIdAndUpdate(id,{$set:body},{new:true}).then((user)=>{
+    User.findByIdAndUpdate(id,{$set:query},{new:true}).then((user)=>{
         if(user)
             res.send({user})
         else
@@ -95,5 +96,6 @@ router.patch('/update/:id',(req,res)=>{
         res.status(400).send(e);
     })
 })
+
 
 module.exports = router;

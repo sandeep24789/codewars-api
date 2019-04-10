@@ -2,43 +2,38 @@ var mongoose = require('mongoose');
 var jwt = require('jsonwebtoken');
 var config = require('../config/config');
 const bcrypt = require('bcryptjs');
+var { ObjectID } = require('mongodb');
+var Schema =  mongoose.Schema;
+var ObjectId = Schema.Types.ObjectId;
 
 var UserSchema = new mongoose.Schema({
     email: String,
     password: String,
     name: String,
-    status: String,
-    role: String,
-    groups: String,
+    group: String,
     rounds: {
-        round1: {
+        quizohilic: {
             status: String,
-            mark: String,
-            result: String
+            score: String,
+            result: String,
+            qa: [{
+                questionid: ObjectId,
+                credit: Number
+            }]
         },
-        round2: {
+        codingame: {
             status: String,
-            mark: String,
-            result: String
+            score: String,
+            result: String,
+            qa: [{
+                questionid: ObjectId,
+                credit: Number
+            }]
         },
-        round3: {
+        cfc: {
             status: String,
-            mark: String,
+            score: String,
             result: String
-        }
-    },
-    tickets: {
-        ticket1: {
-            yellow: String,
-            bronze: String
-        },
-        ticket2: {
-            blue: String,
-            silver: String
-        },
-        ticket3: {
-            green: String,
-            gold: String
         }
     },
     tokens: [{
@@ -65,19 +60,35 @@ UserSchema.methods.generateAuthToken = function () {
     });
 };
 
-UserSchema.statics.findByCredentials = function (email,password) {
+UserSchema.statics.findUser = function (userID) {
+    var user = this;
+    
+    return user.findById(userID).then((user) => {
+        return user;
+    });
+};
+
+UserSchema.statics.trackAnswers = function (userID, updateQuery) {
+    var user = this;
+    console.log(updateQuery);
+    return user.update({ _id: userID }, updateQuery, { new: true }).then((doc) => {
+        return doc;
+    })
+};
+
+UserSchema.statics.findByCredentials = function (email, password) {
     var User = this;
-    return User.findOne({email}).then((user)=>{
-        if(!user){
+    return User.findOne({ email }).then((user) => {
+        if (!user) {
             return Promise.reject();
-        } 
-        return new Promise((resolve,reject)=> {
-            bcrypt.compare(password,user.password, (err,res)=> {
-                if(res) {
-                resolve(user);
-            } else {
-                reject();
-            }
+        }
+        return new Promise((resolve, reject) => {
+            bcrypt.compare(password, user.password, (err, res) => {
+                if (res) {
+                    resolve(user);
+                } else {
+                    reject();
+                }
             });
         });
     })
